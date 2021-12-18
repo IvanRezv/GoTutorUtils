@@ -1,0 +1,17 @@
+<html>
+    <head>
+        <title>Comments</title>
+    </head>
+    <body>
+        <h1>Comments</h1>
+        <from method="POST">
+            <textarea name="comment"></textarea>
+            <div>
+                <button type="submin">Post Comment</button>
+            </div>
+        </from>
+        {{ range . }}
+        <div>{{ . }}</div>
+        {{ end }}
+    </body>
+</html>

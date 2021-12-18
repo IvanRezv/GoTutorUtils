@@ -1,0 +1,49 @@
+stages:
+  - build
+  - deploy
+  - cleanup
+
+.base_werf: &base_werf
+  - type trdl && . $(trdl use werf 1.2 ea)
+  - type werf && source $(werf ci-env gitlab --as-file)
+
+Build and Publish:
+  stage: build
+  script:
+    - *base_werf
+    - werf build
+  except: [schedules]
+  tags: [werf]
+
+.base_deploy: &base_deploy
+  stage: deploy
+  script:
+    - *base_werf
+    - werf converge -R --release='gotest' --add-label="release=testgo-${CI_COMMIT_REF_SLUG}" --skip-build --set "env_url=$(echo ${CI_ENVIRONMENT_URL} | cut -d / -f 3)"
+  dependencies:
+    - Build and Publish
+  except: [schedules]
+  tags: [werf]
+
+
+Deploy to Staging:
+  <<: *base_deploy
+  when: manual
+  environment:
+    name: staging
+    
+
+Deploy to Production:
+  <<: *base_deploy
+  environment:
+    name: production
+    url: https://${CI_K8S_DOMAIN}
+
+Cleanup:
+  stage: cleanup
+  script:
+    - *base_werf
+    - docker login -u nobody -p ${WERF_IMAGES_CLEANUP_PASSWORD} ${WERF_REPO}
+    - werf cleanup
+  only: [schedules]
+  tags: [werf]

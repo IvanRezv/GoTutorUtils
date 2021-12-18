@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gotest
+  namespace: go-test
+  labels:
+    app : gotest
+spec:
+  selector:
+    matchLabels:
+      app: gotest
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: "20%" 
+      maxUnavailable: "10%" 
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: gotest
+    spec:
+      containers:
+      - name : gotest
+        image: registry.arealidea.ru/ivanrezv/gotutoring/gotutor:latest
+        resources:
+          requests:
+            memory: "200Mi"
+            cpu: "500m"
+          limits:
+            memory: "200Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: registry.arealidea.ru
+
+---
+
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gotest-autoscaling
+  namespace: go-test
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gotest
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotest-svc
+  namespace: go-test
+  labels:
+    app : gotest
+spec:
+  selector:
+    app: gotest
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000

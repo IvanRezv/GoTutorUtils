@@ -1,0 +1,5 @@
+configVersion: 1
+project: test
+---
+image: golang
+dockerfile: foreverloop/Dockerfile
